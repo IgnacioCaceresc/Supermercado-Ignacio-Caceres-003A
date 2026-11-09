@@ -8,10 +8,9 @@ import './index.css';
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <InventoryProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/Supermercado-Ignacio-Caceres-003A">
         <App />
       </BrowserRouter>
     </InventoryProvider>
   </React.StrictMode>
 );
-
