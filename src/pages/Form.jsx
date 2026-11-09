@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   PlusCircle,
@@ -12,16 +12,24 @@ import {
 import { useInventory } from '../context/InventoryContext';
 import { CATEGORIAS } from '../data/mockInventory';
 
+const NUEVA_CATEGORIA_VALUE = '__NUEVA_CATEGORIA__';
+
 export default function Form() {
   const { addProduct, inventory } = useInventory();
   const navigate = useNavigate();
 
-  const selectableCategories = CATEGORIAS.filter((cat) => cat !== 'Todas');
+  // Incluye tanto las categorías base como cualquier nueva categoría que ya se haya creado en el inventario
+  const selectableCategories = useMemo(() => {
+    const baseCats = CATEGORIAS.filter((cat) => cat !== 'Todas');
+    const customCats = inventory.map((item) => item.categoria).filter(Boolean);
+    return Array.from(new Set([...baseCats, ...customCats]));
+  }, [inventory]);
 
   const [formData, setFormData] = useState({
     nombre: '',
     marca: '',
     categoria: selectableCategories[0],
+    nuevaCategoria: '',
     stock: '',
     precio: '',
     sku: '',
@@ -68,6 +76,16 @@ export default function Form() {
       return;
     }
 
+    const finalCategory =
+      formData.categoria === NUEVA_CATEGORIA_VALUE
+        ? formData.nuevaCategoria.trim()
+        : formData.categoria;
+
+    if (!finalCategory) {
+      setError('Por favor escribe el nombre de la nueva categoría.');
+      return;
+    }
+
     const stockNum = Number(formData.stock);
     if (formData.stock === '' || isNaN(stockNum) || stockNum < 0) {
       setError('El stock inicial debe ser un número mayor o igual a 0.');
@@ -82,6 +100,7 @@ export default function Form() {
 
     const added = addProduct({
       ...formData,
+      categoria: finalCategory,
       stock: Math.floor(stockNum),
       precio: Math.floor(precioNum)
     });
@@ -90,7 +109,8 @@ export default function Form() {
     setFormData({
       nombre: '',
       marca: '',
-      categoria: selectableCategories[0],
+      categoria: finalCategory,
+      nuevaCategoria: '',
       stock: '',
       precio: '',
       sku: '',
@@ -127,7 +147,7 @@ export default function Form() {
             <div>
               <h3 className="text-sm font-bold">Producto guardado correctamente</h3>
               <p className="text-xs text-emerald-700 mt-0.5">
-                {createdProduct.nombre} ({createdProduct.marca}) — Stock: {createdProduct.stock} un.
+                {createdProduct.nombre} ({createdProduct.marca}) — Categoría: {createdProduct.categoria} | Stock: {createdProduct.stock} un.
               </p>
             </div>
           </div>
@@ -212,7 +232,24 @@ export default function Form() {
                   {cat}
                 </option>
               ))}
+              <option value={NUEVA_CATEGORIA_VALUE} className="font-bold text-rose-600">
+                + Crear nueva categoría...
+              </option>
             </select>
+
+            {formData.categoria === NUEVA_CATEGORIA_VALUE && (
+              <div className="mt-2.5">
+                <input
+                  type="text"
+                  name="nuevaCategoria"
+                  required
+                  value={formData.nuevaCategoria}
+                  onChange={handleChange}
+                  placeholder="Escribe el nombre de la nueva categoría (ej: Mascotas)"
+                  className="w-full px-4 py-2.5 rounded-xl border border-rose-300 bg-rose-50/30 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+            )}
           </div>
 
           <div>
